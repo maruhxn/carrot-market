@@ -1,4 +1,10 @@
 "use server";
+import {
+  PASSWORD_CONFIRM_FAIL_MSG,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_REGEX,
+  PASSWORD_REGEX_ERROR_MSG,
+} from "@/lib/constants";
 import { z } from "zod";
 
 const checkUsername = (username: string) => !username.includes("fuck");
@@ -10,10 +16,6 @@ const checkPassword = ({
   confirmPassword: string;
 }) => password === confirmPassword;
 
-const passwordRegex = new RegExp(
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*?[#?!@$%^&*-]).+$/
-);
-
 const formSchema = z
   .object({
     username: z
@@ -21,8 +23,6 @@ const formSchema = z
         invalid_type_error: "Username must be a string", // 기대한 타입과 다른 타입을 보낸 경우 나타나는 메시지,
         required_error: "Where is my username?", // 해당 값을 보내지 않을 경우 나타나는 메시지
       })
-      .min(3, "Way too short!!")
-      .max(10, "That is too long!!")
       .toLowerCase()
       .trim()
       //   .transform((username) => "transformedPassword")
@@ -30,16 +30,13 @@ const formSchema = z
     email: z.string().email().toLowerCase(),
     password: z
       .string()
-      .min(4)
-      .regex(
-        passwordRegex,
-        "A password must have lowercase, UPPERCASE, a number and special characters."
-      ),
-    confirmPassword: z.string().min(4),
+      .min(PASSWORD_MIN_LENGTH)
+      .regex(PASSWORD_REGEX, PASSWORD_REGEX_ERROR_MSG),
+    confirmPassword: z.string().min(PASSWORD_MIN_LENGTH),
   })
   //   .refine(checkPassword, "Both passwords should be the same!");
   .refine(checkPassword, {
-    message: "Both passwords should be the same!",
+    message: PASSWORD_CONFIRM_FAIL_MSG,
     path: ["confirmPassword"],
   });
 /**
