@@ -9,6 +9,11 @@ const checkPassword = ({
   password: string;
   confirmPassword: string;
 }) => password === confirmPassword;
+
+const passwordRegex = new RegExp(
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*?[#?!@$%^&*-]).+$/
+);
+
 const formSchema = z
   .object({
     username: z
@@ -18,10 +23,19 @@ const formSchema = z
       })
       .min(3, "Way too short!!")
       .max(10, "That is too long!!")
+      .toLowerCase()
+      .trim()
+      //   .transform((username) => "transformedPassword")
       .refine(checkUsername, "No fuck allowed"), // 비즈니스 로직을 통한 검증 가능,
-    email: z.string().email(),
-    password: z.string().min(10),
-    confirmPassword: z.string().min(10),
+    email: z.string().email().toLowerCase(),
+    password: z
+      .string()
+      .min(4)
+      .regex(
+        passwordRegex,
+        "A password must have lowercase, UPPERCASE, a number and special characters."
+      ),
+    confirmPassword: z.string().min(4),
   })
   //   .refine(checkPassword, "Both passwords should be the same!");
   .refine(checkPassword, {
@@ -45,5 +59,7 @@ export async function createAccount(prevState: any, formData: FormData) {
   const result = formSchema.safeParse(data); // parse와 달리 error를 throw 하지 않는다.
   if (!result.success) {
     return result.error.flatten();
+  } else {
+    console.log(result.data);
   }
 }
