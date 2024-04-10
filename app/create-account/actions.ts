@@ -6,9 +6,8 @@ import {
   PASSWORD_REGEX_ERROR_MSG,
 } from "@/lib/constants";
 import db from "@/lib/db";
+import getSession from "@/lib/session";
 import bcrypt from "bcrypt";
-import { getIronSession } from "iron-session";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -99,12 +98,7 @@ export async function createAccount(prevState: any, formData: FormData) {
         id: true,
       },
     });
-    const session = await getIronSession(cookies(), {
-      cookieName: "delicious-karrot",
-      password: process.env.COOKIE_PASSWORD!,
-    });
-
-    // @ts-ignore
+    const session = await getSession();
     session.id = user.id;
     await session.save();
     redirect("/profile");
