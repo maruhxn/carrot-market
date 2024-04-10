@@ -11,29 +11,6 @@ import bcrypt from "bcrypt";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-const checkUsername = async (username: string) => {
-  const user = await db.user.findUnique({
-    where: {
-      username,
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  return !Boolean(user);
-};
-const checkEmail = async (email: string) => {
-  const user = await db.user.findUnique({
-    where: {
-      email,
-    },
-    select: {
-      id: true,
-    },
-  });
-  return !Boolean(user);
-};
 const checkPassword = ({
   password,
   confirmPassword,
@@ -50,24 +27,60 @@ const formSchema = z
         required_error: "Where is my username?", // 해당 값을 보내지 않을 경우 나타나는 메시지
       })
       .toLowerCase()
-      .trim()
-      //   .transform((username) => "transformedPassword")
-      .refine(checkUsername, "This username is already taken"), // 비즈니스 로직을 통한 검증 가능,
-    email: z.string().email().toLowerCase().refine(
-      checkEmail, // await checkEmail(email)과 동일. (safeParseAsync를 사용하기 때문)
-      "This is an account already registered with that email"
-    ),
+      .trim(),
+    //   .transform((username) => "transformedPassword")
+    email: z.string().email().toLowerCase(),
     password: z
       .string()
       .min(PASSWORD_MIN_LENGTH)
       .regex(PASSWORD_REGEX, PASSWORD_REGEX_ERROR_MSG),
     confirmPassword: z.string().min(PASSWORD_MIN_LENGTH),
   })
-  //   .refine(checkPassword, "Both passwords should be the same!");
+  .superRefine(async ({ username }, ctx) => {
+    const user = await db.user.findUnique({
+      where: {
+        username,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (user) {
+      ctx.addIssue({
+        code: "custom",
+        message: "This username is already taken",
+        path: ["username"], // 설정 안 하면 formErrors로 처리됨.
+        fatal: true, // fatal error로 설정하고, z.NEVER를 반환하면, 뒤에 다른 refine이 있어도, 실행되지 않는다.
+      });
+      return z.NEVER;
+    }
+  })
+  .superRefine(async ({ email }, ctx) => {
+    const user = await db.user.findUnique({
+      where: {
+        email,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (user) {
+      ctx.addIssue({
+        code: "custom",
+        message: "This email is already taken",
+        path: ["email"], // 설정 안 하면 formErrors로 처리됨.
+        fatal: true, // fatal error로 설정하고, z.NEVER를 반환하면, 뒤에 다른 refine이 있어도, 실행되지 않는다.
+      });
+      return z.NEVER;
+    }
+  })
   .refine(checkPassword, {
     message: PASSWORD_CONFIRM_FAIL_MSG,
     path: ["confirmPassword"],
   });
+
 /**
  * 객체에 대하여 refinement를 수행할 수도 있으며, 여기서 발생한 에러는 formErrors에 담긴다.
  * 하지만, 메시지가 아닌 객체를 두번째 인자로 보내주어 커스텀할 수 있다.
