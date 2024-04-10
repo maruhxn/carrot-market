@@ -5,9 +5,33 @@ import {
   PASSWORD_REGEX,
   PASSWORD_REGEX_ERROR_MSG,
 } from "@/lib/constants";
+import db from "@/lib/db";
 import { z } from "zod";
 
-const checkUsername = (username: string) => !username.includes("fuck");
+const checkUsername = async (username: string) => {
+  const user = await db.user.findUnique({
+    where: {
+      username,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return !Boolean(user);
+};
+const checkEmail = async (email: string) => {
+  const user = await db.user.findUnique({
+    where: {
+      email,
+    },
+    select: {
+      id: true,
+    },
+  });
+  return !Boolean(user);
+};
+
 const checkPassword = ({
   password,
   confirmPassword,
@@ -26,8 +50,11 @@ const formSchema = z
       .toLowerCase()
       .trim()
       //   .transform((username) => "transformedPassword")
-      .refine(checkUsername, "No fuck allowed"), // 비즈니스 로직을 통한 검증 가능,
-    email: z.string().email().toLowerCase(),
+      .refine(checkUsername, "This username is already taken"), // 비즈니스 로직을 통한 검증 가능,
+    email: z.string().email().toLowerCase().refine(
+      checkEmail, // await checkEmail(email)과 동일. (safeParseAsync를 사용하기 때문)
+      "This is an account already registered with that email"
+    ),
     password: z
       .string()
       .min(PASSWORD_MIN_LENGTH)
@@ -53,10 +80,10 @@ export async function createAccount(prevState: any, formData: FormData) {
     confirmPassword: formData.get("confirmPassword"),
   };
 
-  const result = formSchema.safeParse(data); // parse와 달리 error를 throw 하지 않는다.
+  const result = await formSchema.safeParseAsync(data);
+  // parse와 달리 safeParse error를 throw 하지 않는다. safeParseAsync는 async 추가. (비즈니스 로직이 async/await릂 포함.)
   if (!result.success) {
     return result.error.flatten();
   } else {
-    console.log(result.data);
   }
 }
