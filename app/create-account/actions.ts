@@ -6,6 +6,7 @@ import {
   PASSWORD_REGEX_ERROR_MSG,
 } from "@/lib/constants";
 import db from "@/lib/db";
+import bcrypt from "bcrypt";
 import { z } from "zod";
 
 const checkUsername = async (username: string) => {
@@ -31,7 +32,6 @@ const checkEmail = async (email: string) => {
   });
   return !Boolean(user);
 };
-
 const checkPassword = ({
   password,
   confirmPassword,
@@ -85,5 +85,17 @@ export async function createAccount(prevState: any, formData: FormData) {
   if (!result.success) {
     return result.error.flatten();
   } else {
+    const hashsedPwd = await bcrypt.hash(result.data.password, 12); // 해싱 알고리즘 12번 실행
+    const user = await db.user.create({
+      data: {
+        username: result.data.username,
+        email: result.data.email,
+        password: hashsedPwd,
+      },
+      select: {
+        id: true,
+      },
+    });
+    console.log(user);
   }
 }
