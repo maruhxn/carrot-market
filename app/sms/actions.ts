@@ -1,6 +1,7 @@
 "use server";
 
 import db from "@/lib/db";
+import { saveLoginSession } from "@/lib/session";
 import crypto from "crypto";
 import { redirect } from "next/navigation";
 import validator from "validator";
@@ -14,7 +15,24 @@ const phoneSchema = z
     "Wrong phone format"
   );
 
-const tokenSchema = z.coerce.number().min(100000).max(999999);
+async function tokenExists(token: number) {
+  const exists = await db.sMSToken.findUnique({
+    where: {
+      token: token.toString(),
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return Boolean(exists);
+}
+
+const tokenSchema = z.coerce
+  .number()
+  .min(100000)
+  .max(999999)
+  .refine(tokenExists, "This token does not exists");
 
 interface ActionState {
   token: boolean;
@@ -86,14 +104,34 @@ export async function smsLogin(prevState: ActionState, formData: FormData) {
       };
     }
   } else {
-    const result = tokenSchema.safeParse(token);
+    // get the userId of token
+    const result = await tokenSchema.spa(token);
     if (!result.success) {
       return {
         token: true,
-        // return the errors
+        error: result.error.flatten(),
       };
     } else {
-      redirect("/");
+      const token = await db.sMSToken.findUnique({
+        // 이미 zod 검증을 통해 존재한다는 것을 확신할 수 있음.
+        where: {
+          token: result.data.toString(),
+        },
+        select: {
+          id: true,
+          userId: true,
+        },
+      });
+
+      //log the user in
+      await saveLoginSession(token!.userId);
+      await db.sMSToken.delete({
+        where: {
+          id: token!.id,
+        },
+      });
+
+      redirect("/profile");
     }
   }
 }
