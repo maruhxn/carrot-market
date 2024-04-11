@@ -10,6 +10,8 @@ const permitAllUrls: Routes = {
   "/login": true,
   "/sms": true,
   "/create-account": true,
+  "/github/start": true,
+  "/github/complete": true,
 }; // 인증되지 않은 user가 갈 수 있는 URL
 // array가 아닌 object로 저장한 이유는, 검색 시간이 object가 O(1)로 더 빠르기 때문.
 
