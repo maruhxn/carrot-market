@@ -6,7 +6,7 @@ import {
   PASSWORD_REGEX_ERROR_MSG,
 } from "@/lib/constants";
 import db from "@/lib/db";
-import getSession from "@/lib/session";
+import { saveLoginSession } from "@/lib/session";
 import bcrypt from "bcrypt";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -70,9 +70,7 @@ export const login = async (prevState: any, formData: FormData) => {
       };
     }
 
-    const session = await getSession();
-    session.id = user?.id;
-    await session.save();
+    await saveLoginSession(user!.id);
     redirect("/profile");
   }
 };
