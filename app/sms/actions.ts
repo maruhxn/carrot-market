@@ -1,4 +1,7 @@
 "use server";
+
+import db from "@/lib/db";
+import crypto from "crypto";
 import { redirect } from "next/navigation";
 import validator from "validator";
 import { z } from "zod";
@@ -17,6 +20,24 @@ interface ActionState {
   token: boolean;
 }
 
+async function getToken() {
+  const token = crypto.randomInt(100000, 999999).toString();
+  const exist = await db.sMSToken.findUnique({
+    where: {
+      token,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (exist) {
+    return getToken();
+  }
+
+  return token;
+}
+
 // z.coerce.number(): 유저가 입력한 string을 number로 변환하려고 시도
 export async function smsLogin(prevState: ActionState, formData: FormData) {
   const phone = formData.get("phone");
@@ -31,6 +52,35 @@ export async function smsLogin(prevState: ActionState, formData: FormData) {
         error: result.error.flatten(), // object가 아니라 하나를 검증하는 것이니까 formErrors만 존재.
       };
     } else {
+      // delete previous token
+      await db.sMSToken.deleteMany({
+        where: {
+          user: {
+            phone: result.data,
+          },
+        },
+      });
+      // create token
+      const token = await getToken();
+      await db.sMSToken.create({
+        data: {
+          token,
+          user: {
+            // token과 user를 연결
+            connectOrCreate: {
+              // 연결 시 user가 있다면 연결, 없다면 user 생성 후 연결
+              where: {
+                phone: result.data,
+              },
+              create: {
+                username: crypto.randomBytes(10).toString("hex"),
+                phone: result.data,
+              },
+            },
+          },
+        },
+      });
+      // send the token using Twilio
       return {
         token: true,
       };
