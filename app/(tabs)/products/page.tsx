@@ -1,4 +1,5 @@
 import ProductList from "@/components/product-list";
+import { PRODUCTS_PAGE_SIZE } from "@/lib/constants";
 import db from "@/lib/db";
 import { Prisma } from "@prisma/client";
 
@@ -14,7 +15,7 @@ async function getInitialProducts() {
     orderBy: {
       created_at: "desc",
     },
-    take: 1,
+    take: PRODUCTS_PAGE_SIZE,
   });
 
   return products;

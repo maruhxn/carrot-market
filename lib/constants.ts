@@ -7,3 +7,6 @@ export const PASSWORD_REGEX = new RegExp(
 export const PASSWORD_REGEX_ERROR_MSG =
   "A password must have lowercase, UPPERCASE, a number and special characters.";
 export const PASSWORD_CONFIRM_FAIL_MSG = "Both passwords should be the same!";
+
+/* PAGE_SIZE */
+export const PRODUCTS_PAGE_SIZE = 10;

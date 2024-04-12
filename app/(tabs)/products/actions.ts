@@ -1,9 +1,9 @@
 "use server";
 
+import { PRODUCTS_PAGE_SIZE } from "@/lib/constants";
 import db from "@/lib/db";
 
 export async function getMoreProducts(page: number) {
-  const PAGE_SIZE = 1;
   const products = await db.product.findMany({
     select: {
       title: true,
@@ -15,8 +15,8 @@ export async function getMoreProducts(page: number) {
     orderBy: {
       created_at: "desc",
     },
-    skip: page * PAGE_SIZE,
-    take: PAGE_SIZE,
+    skip: page * PRODUCTS_PAGE_SIZE,
+    take: PRODUCTS_PAGE_SIZE,
   });
   return products;
 }
