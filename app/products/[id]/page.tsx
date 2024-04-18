@@ -153,3 +153,15 @@ export default async function ProductDetail({
     </div>
   );
 }
+
+/**
+ * 외부 API로부터 데이터를 fetch 함수를 통해 cookies나 headers를 쓰지 않으면, GET 요청 시 자동으로 데이터를 캐싱해줄 것이다.
+ *
+ */
+
+fetch("https://api.com", {
+  next: {
+    revalidate: 60,
+    tags: ["hello"],
+  },
+});
