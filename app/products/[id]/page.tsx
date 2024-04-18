@@ -2,6 +2,7 @@ import db from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { formatToWon } from "@/lib/utils";
 import { UserIcon } from "@heroicons/react/24/solid";
+import { unstable_cache as nextCache, revalidateTag } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -15,6 +16,7 @@ async function getIsOwner(userId: number) {
 }
 
 async function getProduct(id: number) {
+  console.log("product");
   const product = await db.product.findUnique({
     where: {
       id,
@@ -30,9 +32,31 @@ async function getProduct(id: number) {
   });
   return product;
 }
+const getCachedProduct = nextCache(getProduct, ["product-detail"], {
+  tags: ["product-detail", "xxx"],
+});
+
+async function getProductTitle(id: number) {
+  console.log("title");
+  const product = await db.product.findUnique({
+    where: {
+      id,
+    },
+    select: {
+      title: true,
+    },
+  });
+  return product;
+}
+
+// nextCache가 받아온 인자를 자동으로 첫번째 인자 함수에 전달함.
+const getCachedProductTitle = nextCache(getProductTitle, ["product-title"], {
+  tags: ["product-title", "xxx"], // tags는 unique하지 않아도 된다.어플리케이션의 여러 cache들은 같은 tags를 공유할 수 있다.
+  // 특정 태그를 가진 캐시를 revalidate하는 것이 가능하다.
+});
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
-  const product = await getProduct(Number(params.id));
+  const product = await getCachedProductTitle(Number(params.id));
   return {
     title: product?.title,
   };
@@ -48,7 +72,7 @@ export default async function ProductDetail({
     return notFound();
   }
 
-  const product = await getProduct(id);
+  const product = await getCachedProduct(id);
 
   if (!product) {
     return notFound();
@@ -65,6 +89,11 @@ export default async function ProductDetail({
     });
 
     redirect("/products");
+  };
+
+  const revalidate = async () => {
+    "use server";
+    revalidateTag("xxx");
   };
 
   return (
@@ -103,9 +132,14 @@ export default async function ProductDetail({
           {formatToWon(product.price)}원
         </span>
         {isOwner ? (
-          <form action={deleteProduct}>
+          // <form action={deleteProduct}>
+          //   <button className="bg-red-500 px-5 py-2.5 rounded-md text-white font-semibold">
+          //     Delete product
+          //   </button>
+          // </form>
+          <form action={revalidate}>
             <button className="bg-red-500 px-5 py-2.5 rounded-md text-white font-semibold">
-              Delete product
+              Revalidate title cache
             </button>
           </form>
         ) : null}
