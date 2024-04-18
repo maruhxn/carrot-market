@@ -43,6 +43,24 @@ export const metadata = {
   title: "Home",
 };
 
+// export const dynamic = "force-dynamic";
+/**
+ * dynamic은 route segment config 옵션 중 하나로, 이것은 page, layout, route handler의 동작을 구성할 수 있도록 해준다.
+ * 기본값은 'auto'이다.
+ *
+ * - auto: 우리의 페이지가 가능한 한 많은 cache를 사용하게 될 것을 의미한다.
+ * - force-dynamic: dynamic rendering을 강제로 실행시킨다. => 사용자가 페이지를 방문할 때마다 이전 버전의 HTML을 볼 수 없다. 즉, 방문할 때마다 새로운 HTML을 generate 한다.
+ * => force-dynamic을 사용해야 nextCache가 의미있다.
+ * - force-static
+ * - error
+ */
+
+export const revalidate = 30;
+/**
+ * revalidate: 특정한 시간에 페이지를 revalidate 하도록 Next.js에게 지시할 수 있다.
+ * Page 단위로 nextCache 및 revalidate 속성을 적용한 느낌이다.
+ */
+
 export default async function Products() {
   const initialProducts = await getInitialProducts();
   const revalidate = async () => {
@@ -78,4 +96,7 @@ export default async function Products() {
  *
  * => static page라면, cache를 사용하지 않더라도 database 호출을 줄일 수 있다!
  * => 새로운 데이터를 페칭하고 싶다면 revalidatePath를 호출할 수 있는 무언가와 상호작용해야 한다!
+ *
+ * => revalidatePath를 호출하지 않아도 새로고침할 수 있는 Customization 옵션이 있다.
+ *
  */
