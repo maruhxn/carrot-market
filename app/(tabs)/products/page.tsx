@@ -3,7 +3,7 @@ import { PRODUCTS_PAGE_SIZE } from "@/lib/constants";
 import db from "@/lib/db";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { Prisma } from "@prisma/client";
-import { unstable_cache as nextCache } from "next/cache";
+import { unstable_cache as nextCache, revalidatePath } from "next/cache";
 import Link from "next/link";
 
 const getCachedProducts = nextCache(
@@ -45,9 +45,18 @@ export const metadata = {
 
 export default async function Products() {
   const initialProducts = await getCachedProducts();
+  const revalidate = async () => {
+    "use server";
+    revalidatePath("/products"); // /products URL에 해당하는 페이지와 관련된 모든 내용을 새로고침
+    // 문제는 제어권이 별로 없다는 것. 이 페이지에서 nextCache를 3번 사용했다면 revalidatePath("/products") 했을 때 3개의 cache가 새로고침됨.
+    // 어떤 cache를 새로고침할지 정할 수 없음.. => 이건 revalidateTag를 사용해야 함.
+  };
   return (
     <div>
       <ProductList initialProducts={initialProducts} />
+      <form action={revalidate}>
+        <button>Revalidate</button>
+      </form>
       <Link
         href="/products/add"
         className="bg-orange-500 flex items-center justify-center rounded-full size-16 fixed
