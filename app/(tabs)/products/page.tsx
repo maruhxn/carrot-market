@@ -44,7 +44,7 @@ export const metadata = {
 };
 
 export default async function Products() {
-  const initialProducts = await getCachedProducts();
+  const initialProducts = await getInitialProducts();
   const revalidate = async () => {
     "use server";
     revalidatePath("/products"); // /products URL에 해당하는 페이지와 관련된 모든 내용을 새로고침
@@ -67,3 +67,15 @@ export default async function Products() {
     </div>
   );
 }
+
+/**
+ * cache를 사용하지 않고 단순히 getInitialProducts를 사용한다면 이 페이지는 build 시 static page로 인식된다.
+ * 필요한 데이터는 빌드 과정에서 미리 받아오고 response를 바탕으로 정적인 static html을 생성하여 이를 보여준다. (prod로 구동 시)
+ * 그 이유는, 이 페이지는 cookie를 사용하지 않기 때문이다. => 보는 사람에 따라 내용이 달라지지 않는다 => static이다.
+ *
+ * 새로고침을 하더라도 database를 다시 호출하지 않는다. 다만, 오직 revalidate를 수행하는 경우에만 database를 다시 호출한다.
+ * => NextJS는 revalidatePath 호출 시 해당 페이지의 모든 코드를 다시 실행하여 현재 보고 있는 HTML 파일을 교체한다.
+ *
+ * => static page라면, cache를 사용하지 않더라도 database 호출을 줄일 수 있다!
+ * => 새로운 데이터를 페칭하고 싶다면 revalidatePath를 호출할 수 있는 무언가와 상호작용해야 한다!
+ */

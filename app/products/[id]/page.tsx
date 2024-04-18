@@ -156,12 +156,12 @@ export default async function ProductDetail({
 
 /**
  * 외부 API로부터 데이터를 fetch 함수를 통해 cookies나 headers를 쓰지 않으면, GET 요청 시 자동으로 데이터를 캐싱해줄 것이다.
- *
+ * 이때의 cache는 이제까지 배운 nextCache와 동일한 역할을 수행한다.
+ * fetch("https://api.com", {
+    next: {
+      revalidate: 60,
+      tags: ["hello"],
+    },
+  }); 
+  => revalidatePath나 revalidateTag 등을 통해 fetch 호출까지 새로고침 해줄 수 있다.
  */
-
-fetch("https://api.com", {
-  next: {
-    revalidate: 60,
-    tags: ["hello"],
-  },
-});
