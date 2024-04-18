@@ -3,9 +3,13 @@ import { PRODUCTS_PAGE_SIZE } from "@/lib/constants";
 import db from "@/lib/db";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { Prisma } from "@prisma/client";
+import { unstable_cache as nextCache } from "next/cache";
 import Link from "next/link";
 
+const getCachedProducts = nextCache(getInitialProducts, ["home-products"]);
+// 일단 Next.Js Cache로 가서 key에 대한 데이터를 조회하고, 있으면 반환, 없으면 getInitialProducts 실행하여 response를 메모리에 저장해줄 것.
 async function getInitialProducts() {
+  console.log("hit!!");
   const products = await db.product.findMany({
     select: {
       title: true,
@@ -27,8 +31,12 @@ export type InitialProducts = Prisma.PromiseReturnType<
   typeof getInitialProducts
 >;
 
+export const metadata = {
+  title: "Home",
+};
+
 export default async function Products() {
-  const initialProducts = await getInitialProducts();
+  const initialProducts = await getCachedProducts();
   return (
     <div>
       <ProductList initialProducts={initialProducts} />
