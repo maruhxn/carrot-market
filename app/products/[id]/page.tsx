@@ -1,5 +1,4 @@
 import db from "@/lib/db";
-import { getSession } from "@/lib/session";
 import { formatToWon } from "@/lib/utils";
 import { UserIcon } from "@heroicons/react/24/solid";
 import { unstable_cache as nextCache, revalidateTag } from "next/cache";
@@ -8,15 +7,16 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 async function getIsOwner(userId: number) {
-  const session = await getSession();
-  if (session.id) {
-    return session.id === userId;
-  }
+  // const session = await getSession();
+  // if (session.id) {
+  //   return session.id === userId;
+  // }
+
+  // generateStaticParams를 위해 cookie를 사용하지 않도록 설정.
   return false;
 }
 
 async function getProduct(id: number) {
-  console.log("product");
   const product = await db.product.findUnique({
     where: {
       id,
@@ -37,7 +37,6 @@ const getCachedProduct = nextCache(getProduct, ["product-detail"], {
 });
 
 async function getProductTitle(id: number) {
-  console.log("title");
   const product = await db.product.findUnique({
     where: {
       id,
@@ -152,6 +151,25 @@ export default async function ProductDetail({
       </div>
     </div>
   );
+}
+
+/**
+ * generateStaticParams
+ * [id] 파라미터에 들어갌 수 있는 예상값들을 미리 전달하여 이 페이지를 SSG 페이지로 만든다.
+ * 반환값은 예상 parameter의 배열이다.
+ * 전달받은 파라미터에 해당하는 URL로 이동하면 해당 페이지는 static 페이지로 database를 호출하지 않을 것이다.
+ */
+/**
+ * 만약 4번 products를 수정하여 변경된 데이터를 반영하고 싶다면,
+ * server actino에서 revalidatePath("/products/4") 를 수행하면 된다.
+ */
+export async function generateStaticParams() {
+  const products = await db.product.findMany({
+    select: {
+      id: true,
+    },
+  });
+  return products.map((product) => ({ id: product.id + "" }));
 }
 
 /**
