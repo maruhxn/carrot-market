@@ -163,6 +163,18 @@ export default async function ProductDetail({
  * 만약 4번 products를 수정하여 변경된 데이터를 반영하고 싶다면,
  * server actino에서 revalidatePath("/products/4") 를 수행하면 된다.
  */
+/**
+ * 전달받지 않은 파라미터로 요청 시, 최초 접근 시에는  dynamic 페이지처럼 동작하여 skeleton을 볼 수 있을 것이지만,
+ * 이후 2번째 접속부터는 static 페이지가 생성되어 static page로 동작한다.
+ * 이 동작은 dynamicParams로 설정을 변경할 수 있다.
+ *
+ * dynamicParams가 true일 때는, 미리 생성되지 않은 페이지들이 dynamic 페이지들로 간주되고, 이후엔 그 페이지의 HTML을 저장하여 static 페이지로 바뀐다.
+ * 하지만 false일 때는, 오직 빌드할 때 미리 생성된 페이지들만 찾을 수 있다. 즉, 전달받지 않은 파라미터로 요청 시 notFound를 보게 된다.
+ * 기본값은 true이다.
+ */
+
+// export const dynamicParams = truel
+
 export async function generateStaticParams() {
   const products = await db.product.findMany({
     select: {
