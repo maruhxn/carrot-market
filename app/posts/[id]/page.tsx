@@ -1,13 +1,18 @@
+import CommentInput from "@/components/comment-input";
+import CommentList from "@/components/comment-list";
 import LikeButton from "@/components/like-button";
 import db from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { formatToTimeAgo } from "@/lib/utils";
-import { EyeIcon } from "@heroicons/react/24/solid";
+import { ArrowLeftIcon, EyeIcon, UserIcon } from "@heroicons/react/24/solid";
+import { Prisma } from "@prisma/client";
 import { unstable_cache as nextCache } from "next/cache";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 async function getPost(id: number) {
+  await new Promise((r) => setTimeout(r, 5000));
   try {
     const post = await db.post.update({
       // update하고, 그 결과를 return 해줌.
@@ -76,6 +81,43 @@ function getCachedLikeStatus(postId: number) {
   return cachedOperation(postId);
 }
 
+async function getComments(id: number) {
+  try {
+    const comments = await db.comment.findMany({
+      where: {
+        postId: id,
+      },
+      select: {
+        id: true,
+        user: {
+          select: {
+            username: true,
+            avatar: true,
+          },
+        },
+        payload: true,
+        updated_at: true,
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+    });
+    return comments;
+  } catch (e) {
+    return null;
+  }
+}
+
+export type InitialComments = Prisma.PromiseReturnType<typeof getComments>;
+
+function getCachedComments(postId: number) {
+  const cacheOperation = nextCache(getComments, ["product-comments"], {
+    tags: [`comments-${postId}`],
+    revalidate: 60,
+  });
+  return cacheOperation(postId);
+}
+
 export default async function PostDetail({
   params,
 }: {
@@ -93,16 +135,25 @@ export default async function PostDetail({
 
   const { likeCount, isLiked } = await getCachedLikeStatus(id);
 
+  const comments = await getCachedComments(id);
+
   return (
     <div className="p-5 text-white">
+      <Link className="my-5 text-white block" href="/life">
+        <ArrowLeftIcon className="size-6" />
+      </Link>
       <div className="flex items-center gap-2 mb-2">
-        <Image
-          width={28}
-          height={28}
-          className="size-7 rounded-full"
-          src={post.user.avatar!}
-          alt={post.user.username}
-        />
+        {post.user.avatar ? (
+          <Image
+            width={28}
+            height={28}
+            className="size-7 rounded-full"
+            src={post.user.avatar!}
+            alt={post.user.username}
+          />
+        ) : (
+          <UserIcon className="size-7 rounded-full" />
+        )}
         <div>
           <span className="text-sm font-semibold">{post.user.username}</span>
           <div className="text-xs">
@@ -119,6 +170,8 @@ export default async function PostDetail({
         </div>
         <LikeButton isLiked={isLiked} likeCount={likeCount} postId={id} />
       </div>
+      <CommentInput postId={id} />
+      <CommentList comments={comments} />
     </div>
   );
 }

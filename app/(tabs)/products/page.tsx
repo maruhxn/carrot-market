@@ -58,7 +58,7 @@ export const metadata = {
 export const revalidate = 30;
 /**
  * revalidate: 특정한 시간에 페이지를 revalidate 하도록 Next.js에게 지시할 수 있다.
- * Page 단위로 nextCache 및 revalidate 속성을 적용한 느낌이다.
+ * page를 static page로 만든 후, Page 단위로 nextCache 및 revalidate 속성을 적용한 느낌이다.
  */
 
 export default async function Products() {
