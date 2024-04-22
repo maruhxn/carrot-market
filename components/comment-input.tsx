@@ -11,7 +11,10 @@ interface CommentInputProps {
 
 export default function CommentInput({ postId }: CommentInputProps) {
   const ref = useRef<HTMLInputElement>(null);
-  const [state, dispatch] = useFormState(createComment, null);
+  const [state, dispatch] = useFormState(createComment, {
+    postId,
+    error: undefined,
+  });
   const { pending } = useFormStatus();
 
   const onAction = (payload: FormData) => {
@@ -28,18 +31,9 @@ export default function CommentInput({ postId }: CommentInputProps) {
           name="payload"
           required
           placeholder="댓글을 입력하세요.."
-          errors={state?.fieldErrors.payload}
+          errors={state.error?.fieldErrors.payload}
         />
       </div>
-      <input
-        readOnly
-        required
-        id="postId"
-        name="postId"
-        type="number"
-        defaultValue={postId}
-        className="hidden"
-      />
       <button
         disabled={pending}
         className="primary-btn h-10

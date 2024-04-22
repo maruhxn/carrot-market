@@ -3,6 +3,7 @@
 import db from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { revalidateTag } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 export const likePost = async (postId: number) => {
@@ -36,26 +37,35 @@ export const dislikePost = async (postId: number) => {
 };
 
 const commentSchema = z.object({
-  payload: z.string({
-    required_error: "Comment Payload is required.",
-  }),
-  postId: z.coerce.number({
-    required_error: "Post Id is required.",
-  }),
+  payload: z
+    .string({
+      required_error: "Comment Payload is required.",
+    })
+    .min(1),
 });
 
-export const createComment = async (_: any, formData: FormData) => {
+interface ActionState {
+  postId: number;
+}
+
+export const createComment = async (
+  prevState: ActionState,
+  formData: FormData
+) => {
   const data = {
     payload: formData.get("payload"),
-    postId: formData.get("postId"),
   };
 
   const result = commentSchema.safeParse(data);
-  if (!result.success) return result.error.flatten();
+  if (!result.success)
+    return {
+      postId: prevState.postId,
+      error: result.error.flatten(),
+    };
 
   const session = await getSession();
 
-  if (!session.id) return;
+  if (!session.id) return redirect("/login");
 
   await db.comment.create({
     data: {
@@ -67,7 +77,7 @@ export const createComment = async (_: any, formData: FormData) => {
       },
       post: {
         connect: {
-          id: result.data.postId,
+          id: prevState.postId,
         },
       },
     },
@@ -76,5 +86,9 @@ export const createComment = async (_: any, formData: FormData) => {
     },
   });
 
-  revalidateTag(`comments-${result.data.postId}`);
+  revalidateTag(`comments-${prevState.postId}`);
+
+  return {
+    postId: prevState.postId,
+  };
 };

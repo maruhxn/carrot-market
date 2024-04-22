@@ -83,6 +83,7 @@ function getCachedLikeStatus(postId: number) {
 
 async function getComments(id: number) {
   try {
+    console.log("comments hit!!");
     const comments = await db.comment.findMany({
       where: {
         postId: id,
@@ -101,6 +102,7 @@ async function getComments(id: number) {
       orderBy: {
         created_at: "desc",
       },
+      take: 10,
     });
     return comments;
   } catch (e) {
